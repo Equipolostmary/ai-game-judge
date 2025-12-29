@@ -6,27 +6,28 @@ st.set_page_config(page_title="El Juez de Juegos", layout="wide")
 st.title("El Juez de Juegos")
 
 # ---------------------------------------------
-# Registro de usuario
+# Registro de usuario con botón de confirmación
 # ---------------------------------------------
-if "user" not in st.session_state or not st.session_state.user:
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = ""
-    st.session_state.user_input = st.text_input(
-        "Introduce tu nombre de usuario:",
-        value=st.session_state.user_input,
-        key="user_input_field"
-    )
-    if st.session_state.user_input:
-        st.session_state.user = st.session_state.user_input
+if "user" not in st.session_state:
+    st.session_state.user = ""
+    st.session_state.user_set = False
 
-# Continuar solo si hay usuario
-if "user" in st.session_state and st.session_state.user:
+if not st.session_state.user_set:
+    st.session_state.user = st.text_input("Introduce tu nombre de usuario:")
+    if st.button("Continuar"):
+        if st.session_state.user.strip() == "":
+            st.warning("Debes introducir un nombre de usuario")
+        else:
+            st.session_state.user_set = True
+
+# ---------------------------------------------
+# Continuar con la app solo si usuario definido
+# ---------------------------------------------
+if st.session_state.user_set and st.session_state.user:
     user = st.session_state.user
     st.subheader(f"Bienvenido, {user}!")
 
-    # ---------------------------------------------
     # Crear juego nuevo
-    # ---------------------------------------------
     if "new_game_name" not in st.session_state:
         st.session_state.new_game_name = ""
     if "new_game_rules" not in st.session_state:
@@ -53,13 +54,10 @@ if "user" in st.session_state and st.session_state.user:
                 st.session_state.new_game_rules
             )
             st.success(f"Juego '{st.session_state.new_game_name}' guardado ✅")
-            # Limpiar inputs
             st.session_state.new_game_name = ""
             st.session_state.new_game_rules = ""
 
-    # ---------------------------------------------
     # Mostrar juegos guardados
-    # ---------------------------------------------
     st.subheader("Tus juegos guardados")
     games = st.session_state.get("games", {}).get(user, load_games(user))
     for idx, g in enumerate(games):
@@ -68,9 +66,7 @@ if "user" in st.session_state and st.session_state.user:
             explanation = explain_game(g["rules"])
             st.info(explanation)
 
-    # ---------------------------------------------
     # Probar jugada
-    # ---------------------------------------------
     if games:
         game_names = [g['name'] for g in games]
         if "selected_game_idx" not in st.session_state:
