@@ -1,39 +1,35 @@
 import streamlit as st
 from openai import OpenAI
 
-# --- CLIENTE OPENAI (API NUEVA) ---
+# --- CLIENTE OPENAI ---
 if "openai" not in st.secrets or "api_key" not in st.secrets["openai"]:
-    raise RuntimeError("❌ API Key de OpenAI no encontrada en Secrets")
+    raise RuntimeError("❌ Falta la API Key de OpenAI en Secrets")
 
 client = OpenAI(api_key=st.secrets["openai"]["api_key"])
 
 
 def explain_game(rules_text: str) -> str:
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-4.1-mini",
-        messages=[
+        input=[
             {
                 "role": "system",
-                "content": (
-                    "Eres un experto en juegos de mesa. "
-                    "Explica las reglas de forma muy breve, clara y práctica "
-                    "para empezar a jugar inmediatamente."
-                )
+                "content": "Explica este juego de mesa de forma muy breve y clara."
             },
             {
                 "role": "user",
                 "content": rules_text
             }
         ],
-        temperature=0.3,
     )
-    return response.choices[0].message.content.strip()
+
+    return response.output_text.strip()
 
 
 def judge_move(rules_text: str, move_text: str) -> str:
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-4.1-mini",
-        messages=[
+        input=[
             {
                 "role": "system",
                 "content": "Eres un juez imparcial de juegos."
@@ -47,6 +43,6 @@ def judge_move(rules_text: str, move_text: str) -> str:
                 )
             }
         ],
-        temperature=0.2,
     )
-    return response.choices[0].message.content.strip()
+
+    return response.output_text.strip()
