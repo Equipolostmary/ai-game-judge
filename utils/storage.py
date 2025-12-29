@@ -6,10 +6,7 @@ import streamlit as st
 DATA_PATH = Path("/tmp/games.json")
 
 def load_games(user):
-    """
-    Carga todos los juegos de un usuario.
-    Devuelve lista vacía si no hay nada.
-    """
+    """Carga todos los juegos de un usuario. Devuelve lista vacía si no hay nada."""
     if not DATA_PATH.exists():
         return []
     try:
@@ -19,10 +16,7 @@ def load_games(user):
     return data.get(user, [])
 
 def save_game(user, name, rules):
-    """
-    Guarda un juego nuevo para un usuario.
-    Actualiza st.session_state para que la UI se refresque.
-    """
+    """Guarda un juego nuevo para un usuario y actualiza session_state para refrescar la UI."""
     # Cargar datos existentes
     if DATA_PATH.exists():
         try:
@@ -33,15 +27,12 @@ def save_game(user, name, rules):
         data = {}
 
     # Añadir juego
-    data.setdefault(user, []).append({
-        "name": name,
-        "rules": rules
-    })
+    data.setdefault(user, []).append({"name": name, "rules": rules})
 
-    # Guardar en archivo
+    # Guardar en JSON
     DATA_PATH.write_text(json.dumps(data, indent=2))
 
-    # Guardar en session_state para actualizar la UI
+    # Actualizar session_state para refrescar la lista de juegos
     if "games" not in st.session_state:
         st.session_state["games"] = {}
     st.session_state["games"][user] = data[user]
