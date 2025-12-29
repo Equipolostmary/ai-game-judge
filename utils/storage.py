@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
+import streamlit as st
 
-# Archivo de datos
-DATA_PATH = Path("data/games.json")
+# Carpeta segura para Streamlit Cloud
+DATA_PATH = Path(st.secrets.get("DATA_DIR", "./data/games.json"))
 
 def load_games(user):
     """
@@ -20,8 +21,11 @@ def load_games(user):
 def save_game(user, name, rules):
     """
     Guarda un juego nuevo para un usuario.
-    Crea la carpeta 'data' si no existe.
+    Usa carpeta temporal segura.
     """
+    # Asegurarse de que la carpeta existe
+    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+
     # Cargar datos existentes
     if DATA_PATH.exists():
         try:
@@ -37,9 +41,5 @@ def save_game(user, name, rules):
         "rules": rules
     })
 
-    # Crear carpeta si no existe
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-
     # Guardar en archivo JSON
     DATA_PATH.write_text(json.dumps(data, indent=2))
-
