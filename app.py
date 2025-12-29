@@ -1,57 +1,31 @@
 import streamlit as st
-from judge.judge_core import judge_move, explain_game
 from utils.storage import save_game, load_games
+from judge.judge_core import explain_game, judge_move
 
-st.set_page_config(page_title="AI Game Judge", layout="centered")
+st.title("El Juez de Juegos")
 
+# Usuario (simulado para pruebas)
 if "user" not in st.session_state:
-    st.session_state.user = None
-if "current_game" not in st.session_state:
-    st.session_state.current_game = None
+    st.session_state.user = st.text_input("Nombre de usuario:")
 
-if not st.session_state.user:
-    st.title("🎲 AI Game Judge")
-    username = st.text_input("Nombre de usuario")
-    if st.button("Entrar"):
-        st.session_state.user = username
-        st.rerun()
-    st.stop()
+user = st.session_state.user
 
-st.title("🎤 AI Game Judge")
-st.write(f"Hola, **{st.session_state.user}**")
+st.subheader("Crear un juego nuevo")
+name = st.text_input("Nombre del juego")
+rules = st.text_area("Reglas del juego")
 
-games = load_games(st.session_state.user)
+if st.button("Guardar juego"):
+    if not name or not rules:
+        st.warning("Rellena el nombre y las reglas del juego")
+    else:
+        save_game(user, name, rules)
+        st.success(f"Juego '{name}' guardado ✅")
+        st.experimental_rerun()  # fuerza recarga para actualizar la lista
 
-st.subheader("🎮 Tus juegos")
-game_names = [g["name"] for g in games]
-
-selected = st.selectbox("Selecciona un juego", ["Crear nuevo"] + game_names)
-
-if selected == "Crear nuevo":
-    name = st.text_input("Nombre del juego")
-    rules = st.text_area("Instrucciones del juego")
-    if st.button("Guardar juego"):
-        save_game(st.session_state.user, name, rules)
-        st.success("Juego guardado")
-        st.rerun()
-else:
-    st.session_state.current_game = selected
-
-if st.session_state.current_game:
-    game = next(g for g in games if g["name"] == st.session_state.current_game)
-
-    st.subheader(f"📜 {game['name']}")
-
-    if st.button("📖 Explícanos cómo se juega"):
-        explanation = explain_game(game["rules"])
+st.subheader("Tus juegos guardados")
+games = st.session_state.get("games", {}).get(user, [])
+for g in games:
+    st.markdown(f"**{g['name']}**: {g['rules']}")
+    if st.button(f"Explicar {g['name']}"):
+        explanation = explain_game(g["rules"])
         st.info(explanation)
-
-    st.divider()
-
-    st.subheader("⚖️ Juez en acción")
-    move = st.text_input("Introduce la jugada del jugador")
-
-    if st.button("Evaluar"):
-        verdict = judge_move(game["rules"], move)
-        st.write(verdict)
-
