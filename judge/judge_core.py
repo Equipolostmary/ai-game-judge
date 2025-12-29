@@ -1,54 +1,29 @@
-import os
-from dotenv import load_dotenv
-from openai import OpenAI
+import openai
+import streamlit as st
 
-load_dotenv()
+# Inicializa la API Key desde los secretos
+openai.api_key = st.secrets["openai"]["api_key"]
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-SYSTEM_PROMPT = (
-    "Eres un juez neutral de juegos de mesa y juegos sociales. "
-    "Interpretas reglas, explicas cómo se juega de forma clara "
-    "y decides si una jugada es válida, dudosa o no válida, "
-    "siempre con una explicación breve."
-)
-
-def explain_game(rules: str) -> str:
-    response = client.chat.completions.create(
+def explain_game(rules_text):
+    """Devuelve un resumen breve de las reglas usando IA"""
+    response = openai.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    "Estas son las reglas del juego:\n\n"
-                    f"{rules}\n\n"
-                    "Explícalo de forma corta y clara para jugadores antes de empezar."
-                ),
-            },
+            {"role": "system", "content": "Eres un experto en juegos de mesa y explicas las reglas de manera breve y clara."},
+            {"role": "user", "content": f"Explica de forma breve estas reglas:\n{rules_text}"}
         ],
         temperature=0.4,
     )
     return response.choices[0].message.content
 
-
-def judge_move(rules: str, move: str) -> str:
-    response = client.chat.completions.create(
+def judge_move(rules_text, move_text):
+    """Evalúa si la jugada es válida según las reglas"""
+    response = openai.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    "Reglas del juego:\n"
-                    f"{rules}\n\n"
-                    "Jugada del jugador:\n"
-                    f"{move}\n\n"
-                    "Decide si la jugada es VÁLIDA, DUDOSA o NO VÁLIDA "
-                    "y explica brevemente el motivo."
-                ),
-            },
+            {"role": "system", "content": "Eres un juez imparcial de juegos."},
+            {"role": "user", "content": f"Estas son las reglas:\n{rules_text}\n¿Es válida esta jugada?\n{move_text}"}
         ],
-        temperature=0.3,
+        temperature=0.4,
     )
     return response.choices[0].message.content
