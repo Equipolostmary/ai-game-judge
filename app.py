@@ -1,10 +1,8 @@
 import streamlit as st
 from PIL import Image
-import pytesseract
-import io
 
 # =========================
-# CONFIGURACIÓN DE LA APP
+# CONFIGURACIÓN
 # =========================
 st.set_page_config(
     page_title="Juez de Juegos",
@@ -13,31 +11,27 @@ st.set_page_config(
 )
 
 # =========================
-# CSS – MODO OSCURO JUEZ
+# CSS — JUEZ OSCURO
 # =========================
 st.markdown("""
 <style>
 
-/* Fondo oscuro total */
 html, body, [data-testid="stAppViewContainer"] {
     background-color: #0b0f14 !important;
     color: #e6edf3 !important;
 }
 
-/* Quitar márgenes blancos */
 .block-container {
     padding-top: 2rem;
     padding-bottom: 2rem;
 }
 
-/* Contenedor principal */
 .judge-terminal {
     max-width: 650px;
-    margin: 0 auto;
+    margin: auto;
     font-family: monospace;
 }
 
-/* Panel del juez */
 .judge-core {
     background-color: #020409;
     border: 2px solid #c9a227;
@@ -47,7 +41,6 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 40px;
 }
 
-/* Texto juez */
 .judge-title {
     color: #c9a227;
     font-weight: bold;
@@ -61,21 +54,18 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 14px;
 }
 
-/* Inputs */
 textarea, input {
     background-color: #020409 !important;
     color: #e6edf3 !important;
     border: 1px solid #30363d !important;
 }
 
-/* File uploader */
 [data-testid="stFileUploader"] {
     background-color: #020409;
     border: 1px dashed #30363d;
     padding: 16px;
 }
 
-/* Botones */
 button {
     background-color: #020409 !important;
     color: #c9a227 !important;
@@ -91,7 +81,6 @@ button:hover {
     color: #020409 !important;
 }
 
-/* Ocultar footer y menú */
 footer, header, #MainMenu {
     visibility: hidden;
 }
@@ -100,74 +89,61 @@ footer, header, #MainMenu {
 """, unsafe_allow_html=True)
 
 # =========================
-# CONTENEDOR PRINCIPAL
+# CONTENEDOR
 # =========================
 st.markdown('<div class="judge-terminal">', unsafe_allow_html=True)
 
 # =========================
-# JUEZ (VISIBLE Y CENTRAL)
+# JUEZ VISIBLE
 # =========================
 st.markdown("""
 <div class="judge-core">
     <div class="judge-title">⚖️ JUEZ DE JUEGOS</div>
     <div class="judge-status">
         SISTEMA DE ARBITRAJE ACTIVO<br>
-        ESTADO: ESPERANDO CASO
+        ESTADO: ESPERANDO INSTRUCCIONES
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # =========================
-# CARGA DE INSTRUCCIONES
+# INSTRUCCIONES
 # =========================
-st.markdown("### 📄 Instrucciones del juego")
+st.markdown("### 📄 INSTRUCCIONES DEL JUEGO")
 
-instructions_text = st.text_area(
-    "Pega aquí las reglas o descripción del juego",
+instructions = st.text_area(
+    "Escribe o pega aquí las reglas del juego",
     height=180
 )
 
-uploaded_file = st.file_uploader(
-    "O sube una imagen con las instrucciones",
+uploaded_image = st.file_uploader(
+    "O sube una imagen con las instrucciones (solo visual)",
     type=["png", "jpg", "jpeg"]
 )
 
-extracted_text = ""
-
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Imagen cargada", use_container_width=True)
-
-    try:
-        extracted_text = pytesseract.image_to_string(image, lang="spa")
-        st.success("Texto extraído correctamente de la imagen")
-    except Exception as e:
-        st.error("No se pudo leer el texto de la imagen")
+if uploaded_image:
+    image = Image.open(uploaded_image)
+    st.image(image, caption="Imagen aportada al juez", use_container_width=True)
 
 # =========================
-# BOTÓN JUZGAR
+# VEREDICTO
 # =========================
 st.markdown("---")
 
 if st.button("DICTAR VEREDICTO"):
-    final_text = instructions_text.strip() + "\n\n" + extracted_text.strip()
-
-    if not final_text.strip():
-        st.error("El juez necesita instrucciones para dictar sentencia.")
+    if not instructions.strip() and not uploaded_image:
+        st.error("El juez no puede dictar sentencia sin pruebas.")
     else:
         st.markdown("""
         <div class="judge-core">
             <div class="judge-title">📜 VEREDICTO</div>
             <div class="judge-status">
-                El juego ha sido analizado.<br><br>
-                <strong>Resultado:</strong><br>
-                Reglas claras, estructura válida.<br>
-                El juez no encuentra contradicciones evidentes.
+                Caso recibido.<br><br>
+                El juez ha analizado las instrucciones.<br>
+                <strong>No se detectan incoherencias evidentes.</strong><br><br>
+                Sentencia provisional emitida.
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-# =========================
-# CIERRE CONTENEDOR
-# =========================
 st.markdown('</div>', unsafe_allow_html=True)
