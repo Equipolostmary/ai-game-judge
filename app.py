@@ -1,101 +1,129 @@
 import streamlit as st
-from utils.storage import save_game, load_games
-from judge.judge_core import explain_game
 
-# ---------------- CONFIG ----------------
+# =========================
+# CONFIGURACIÓN BÁSICA
+# =========================
 st.set_page_config(
-    page_title="El Juez de Juegos",
+    page_title="Juez de Juegos",
+    page_icon="⚖️",
     layout="centered"
 )
 
-st.title("🎲 El Juez de Juegos")
-st.caption("Tu árbitro inteligente para juegos de mesa")
+# =========================
+# CSS – ESTILO JUEZ TERMINAL
+# =========================
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+}
+.block-container {
+    max-width: 650px;
+    padding-top: 40px;
+}
+h1, h2, h3 {
+    color: #e6edf3;
+    text-align: center;
+    letter-spacing: 1px;
+}
+p, label {
+    color: #9ba3af;
+    text-align: center;
+}
+hr {
+    border: none;
+    border-top: 1px solid #30363d;
+    margin: 30px 0;
+}
+.stButton > button {
+    background-color: #161b22;
+    color: #c9a227;
+    border: 1px solid #30363d;
+    font-size: 17px;
+    padding: 14px;
+    border-radius: 6px;
+    width: 100%;
+}
+.stButton > button:hover {
+    border-color: #c9a227;
+}
+.stTextInput input,
+.stTextArea textarea {
+    background-color: #161b22;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# ---------------- USUARIO ----------------
-if "user" not in st.session_state:
-    st.session_state.user = ""
+# =========================
+# CABECERA
+# =========================
+st.title("⚖️ JUEZ DE JUEGOS")
+st.markdown("Árbitro neutral. Sin discusiones.")
+st.markdown("---")
 
-if st.session_state.user == "":
-    st.subheader("👤 Identifícate para empezar")
-    username = st.text_input("Nombre de usuario")
-    if st.button("Continuar"):
-        if username.strip() == "":
-            st.warning("Introduce un nombre de usuario")
-        else:
-            st.session_state.user = username.strip()
-            st.rerun()
-    st.stop()
+# =========================
+# SECCIÓN: JUEGO
+# =========================
+st.subheader("🎲 JUEGO")
 
-user = st.session_state.user
-
-st.success(f"Bienvenido, **{user}**")
-
-# ---------------- CREAR JUEGO ----------------
-st.divider()
-st.header("➕ Añadir un juego")
-
-game_name = st.text_input("Nombre del juego")
-
-st.subheader("Reglas del juego")
-
-rules_text = st.text_area(
-    "Escribe las reglas aquí (opcional)",
-    height=150
+game_name = st.text_input(
+    "Nombre del juego",
+    placeholder="Ej: Palabras Encadenadas"
 )
 
-uploaded_file = st.file_uploader(
-    "O sube las instrucciones del juego (TXT, PDF o DOCX)",
-    type=["txt", "pdf", "docx"]
+game_rules = st.text_area(
+    "Reglas del juego",
+    placeholder="Escribe aquí las reglas completas del juego...",
+    height=200
 )
 
-final_rules = ""
-
-if uploaded_file is not None:
-    if uploaded_file.type == "text/plain":
-        final_rules = uploaded_file.read().decode("utf-8")
-
-    elif uploaded_file.type == "application/pdf":
-        import pdfplumber
-        with pdfplumber.open(uploaded_file) as pdf:
-            final_rules = "\n".join(
-                page.extract_text() or "" for page in pdf.pages
-            )
-
-    elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        from docx import Document
-        doc = Document(uploaded_file)
-        final_rules = "\n".join(p.text for p in doc.paragraphs)
-
-else:
-    final_rules = rules_text
-
-if st.button("💾 Guardar juego"):
-    if game_name.strip() == "" or final_rules.strip() == "":
-        st.warning("Debes indicar el nombre del juego y sus reglas")
+if st.button("📘 EXPLICAR JUEGO"):
+    if not game_rules.strip():
+        st.warning("El juez necesita conocer las reglas.")
     else:
-        save_game(user, game_name.strip(), final_rules.strip())
-        st.success(f"Juego **{game_name}** guardado correctamente")
-        st.rerun()
+        st.markdown("---")
+        st.subheader("📖 EXPLICACIÓN OFICIAL")
+        st.markdown("""
+        • **Objetivo:** Determinado por las reglas introducidas  
+        • **Turnos:** Secuenciales  
+        • **Prohibiciones:** Según reglas  
+        • **Final:** Cuando se cumple la condición de victoria  
 
-# ---------------- JUEGOS GUARDADOS ----------------
-st.divider()
-st.header("📚 Tus juegos")
+        *(La explicación automática se activará cuando conectemos la IA)*
+        """)
 
-games = load_games(user)
+# =========================
+# SECCIÓN: CONSULTA AL JUEZ
+# =========================
+st.markdown("---")
+st.subheader("🧠 CONSULTA AL JUEZ")
 
-if not games:
-    st.info("Aún no has guardado ningún juego")
-else:
-    for idx, game in enumerate(games):
-        with st.expander(f"🎮 {game['name']}"):
-            st.markdown("**Reglas:**")
-            st.write(game["rules"][:500] + ("..." if len(game["rules"]) > 500 else ""))
+situation = st.text_area(
+    "Describe la situación exacta",
+    placeholder="Ej: El jugador dijo una palabra que empieza por la letra correcta pero es un nombre propio...",
+    height=180
+)
 
-            if st.button(
-                f"🧠 Explícame cómo se juega",
-                key=f"explain_{idx}"
-            ):
-                with st.spinner("El juez está pensando..."):
-                    explanation = explain_game(game["rules"])
-                st.success("📖 Explicación rápida")
-                st.write(explanation)
+if st.button("⚖️ EMITIR VEREDICTO"):
+    if not situation.strip():
+        st.warning("El juez necesita hechos, no silencio.")
+    else:
+        st.markdown("---")
+        st.subheader("⚖️ VEREDICTO")
+        st.markdown("""
+        **NO VÁLIDO**
+
+        **Motivo:**  
+        La situación descrita contradice las reglas del juego introducidas.
+
+        *(El razonamiento automático se activará cuando conectemos la IA)*
+        """)
+
+# =========================
+# PIE
+# =========================
+st.markdown("---")
+st.markdown("Juez de Juegos · Prototipo")
