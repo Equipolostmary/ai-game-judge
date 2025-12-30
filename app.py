@@ -1,159 +1,133 @@
 import streamlit as st
 from PIL import Image
+import uuid
 
-# -------------------------
-# CONFIGURACIÓN DE PÁGINA
-# -------------------------
+# ---------------- CONFIG ----------------
 st.set_page_config(
     page_title="Juez de Juegos",
     page_icon="⚖️",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    layout="centered"
 )
 
-# -------------------------
-# CSS PERSONALIZADO
-# -------------------------
+# ---------------- ESTADO ----------------
+if "games" not in st.session_state:
+    st.session_state.games = {}
+
+if "current_game" not in st.session_state:
+    st.session_state.current_game = None
+
+# ---------------- CSS ----------------
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    background-color: #0b0f14;
-    color: #e6e6e6;
-}
+body { background-color: #0b0f14; color: #e6e6e6; }
 
-.main {
-    background-color: #0b0f14;
-}
-
-.judge-box {
+.judge {
     border: 2px solid #f5c542;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 25px;
     text-align: center;
+    background: linear-gradient(180deg,#121821,#0b0f14);
     margin-bottom: 40px;
-    background: radial-gradient(circle at top, #121821, #0b0f14);
 }
 
-.judge-title {
-    font-size: 28px;
-    font-weight: 700;
+.judge h1 {
     color: #f5c542;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
 }
 
-.judge-sub {
-    font-size: 14px;
+.judge p {
     color: #9fb3c8;
-    margin-top: 10px;
 }
 
-.section {
-    margin-top: 40px;
-}
-
-textarea {
-    background-color: #0f1623 !important;
-    color: #ffffff !important;
-    border: 1px solid #2a3446 !important;
-}
-
-.stButton>button {
-    background-color: transparent;
-    color: #f5c542;
-    border: 2px solid #f5c542;
-    padding: 10px 25px;
-    border-radius: 10px;
-    font-weight: bold;
-}
-
-.stButton>button:hover {
-    background-color: #f5c542;
-    color: #000;
-}
-
-hr {
+.card {
+    background-color: #0f1623;
     border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
 }
 
-.footer {
-    text-align: center;
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 50px;
+button {
+    border-radius: 10px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# CABECERA - EL JUEZ
-# -------------------------
+# ---------------- JUEZ ----------------
 st.markdown("""
-<div class="judge-box">
-    <div class="judge-title">⚖️ JUEZ DE JUEGOS</div>
-    <div class="judge-sub">
-        SISTEMA DE ARBITRAJE NEUTRAL<br>
-        ESTADO: ESPERANDO INSTRUCCIONES
-    </div>
+<div class="judge">
+    <h1>⚖️ JUEZ DE JUEGOS</h1>
+    <p>Sistema de arbitraje imparcial</p>
+    <p><b>Estado:</b> observando y aprendiendo</p>
 </div>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# INSTRUCCIONES DEL JUEGO
-# -------------------------
-st.markdown("## 📜 INSTRUCCIONES DEL JUEGO")
+# ---------------- BIBLIOTECA ----------------
+st.markdown("## 📚 Biblioteca de Juegos")
 
-game_name = st.text_input("Nombre del juego")
+if st.session_state.games:
+    selected = st.selectbox(
+        "Selecciona un juego aprendido",
+        list(st.session_state.games.keys())
+    )
+    st.session_state.current_game = selected
+else:
+    st.info("El juez aún no ha aprendido ningún juego.")
 
-rules_text = st.text_area(
-    "Escribe o pega aquí las reglas del juego",
-    height=220,
-    placeholder="Ejemplo:\nCada jugador lanza un dado...\nEl juez decide empates..."
+# ---------------- NUEVO JUEGO ----------------
+st.markdown("## ➕ Enseñar un nuevo juego al juez")
+
+name = st.text_input("Nombre del juego")
+
+rules = st.text_area(
+    "Reglas del juego",
+    height=200,
+    placeholder="Escribe las reglas o añade imágenes abajo"
 )
 
-# -------------------------
-# SUBIDA DE IMAGEN (SOLO VISUAL)
-# -------------------------
-st.markdown("### 📷 Imagen con las instrucciones (opcional)")
-uploaded_image = st.file_uploader(
-    "PNG, JPG o JPEG (solo referencia visual)",
-    type=["png", "jpg", "jpeg"]
+images = st.file_uploader(
+    "Sube una o varias imágenes con las instrucciones",
+    type=["png", "jpg", "jpeg"],
+    accept_multiple_files=True
 )
 
-if uploaded_image:
-    image = Image.open(uploaded_image)
-    st.image(image, caption="Imagen cargada (no se analiza automáticamente)", use_container_width=True)
+if images:
+    st.markdown("### 📷 Instrucciones visuales")
+    for img in images:
+        st.image(Image.open(img), use_container_width=True)
 
-# -------------------------
-# ACCIÓN DEL JUEZ
-# -------------------------
-st.markdown("---")
-
-if st.button("⚖️ DICTAR VEREDICTO"):
-    if not game_name:
+if st.button("📖 Enseñar este juego al juez"):
+    if not name:
         st.warning("El juez necesita el nombre del juego.")
-    elif not rules_text:
-        st.warning("El juez necesita reglas para poder arbitrar.")
     else:
-        st.info("""
-        ⚠️ **Modo juez en espera**
-        
-        La lógica de IA está desactivada temporalmente  
-        (saldo / API pendiente de configurar).
-        
-        La interfaz está lista.
-        """)
+        st.session_state.games[name] = {
+            "rules": rules,
+            "images": images,
+            "id": str(uuid.uuid4())
+        }
+        st.session_state.current_game = name
+        st.success(f"El juez ha aprendido el juego: {name}")
 
-        st.markdown("""
-        **Resumen recibido por el juez:**
-        - Juego: `{}`  
-        - Reglas: {} caracteres
-        """.format(game_name, len(rules_text)))
+# ---------------- JUEGO ACTIVO ----------------
+if st.session_state.current_game:
+    game = st.session_state.games[st.session_state.current_game]
 
-# -------------------------
-# PIE
-# -------------------------
+    st.markdown("## 🎮 Juego activo")
+    st.markdown(f"**{st.session_state.current_game}**")
+
+    if st.button("🧠 Explícale el juego al juez"):
+        st.info("El juez ha comprendido las reglas y está listo para arbitrar.")
+
+    if st.button("▶️ Empezar partida"):
+        st.success("La partida ha comenzado. El juez está atento a cualquier disputa.")
+
+    if st.button("⚖️ Solicitar veredicto"):
+        st.warning("El juez emitirá un veredicto cuando la IA esté activada.")
+
+# ---------------- PIE ----------------
 st.markdown("""
-<div class="footer">
-    JUEZ DE JUEGOS · SISTEMA EXPERIMENTAL · SIN DISCUSIONES
-</div>
+<hr>
+<p style="text-align:center;color:#6b7280;font-size:12px;">
+JUEZ DE JUEGOS · AUTORIDAD FINAL · SIN DISCUSIÓN
+</p>
 """, unsafe_allow_html=True)
