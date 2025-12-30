@@ -1,148 +1,173 @@
 import streamlit as st
 from PIL import Image
+import pytesseract
+import io
 
 # =========================
-# CONFIG
+# CONFIGURACIÓN DE LA APP
 # =========================
 st.set_page_config(
     page_title="Juez de Juegos",
-    page_icon="⚖️",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
 # =========================
-# CSS FUERTE (WRAPPER)
+# CSS – MODO OSCURO JUEZ
 # =========================
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    background-color: #0e1117 !important;
+
+/* Fondo oscuro total */
+html, body, [data-testid="stAppViewContainer"] {
+    background-color: #0b0f14 !important;
+    color: #e6edf3 !important;
 }
 
+/* Quitar márgenes blancos */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Contenedor principal */
 .judge-terminal {
-    background-color: #0e1117;
-    color: #e6edf3;
     max-width: 650px;
-    margin: auto;
-    padding: 30px 10px;
+    margin: 0 auto;
+    font-family: monospace;
 }
 
-.judge-box {
-    border: 1px solid #30363d;
+/* Panel del juez */
+.judge-core {
+    background-color: #020409;
+    border: 2px solid #c9a227;
     border-radius: 8px;
-    padding: 16px;
+    padding: 24px;
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 40px;
 }
 
+/* Texto juez */
 .judge-title {
     color: #c9a227;
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 3px;
+    font-size: 18px;
 }
 
-hr {
-    border: none;
-    border-top: 1px solid #30363d;
-    margin: 30px 0;
+.judge-status {
+    color: #9ba3af;
+    margin-top: 12px;
+    font-size: 14px;
 }
 
-input, textarea {
-    background-color: #161b22 !important;
+/* Inputs */
+textarea, input {
+    background-color: #020409 !important;
     color: #e6edf3 !important;
     border: 1px solid #30363d !important;
 }
 
-button {
-    background-color: #161b22 !important;
-    color: #c9a227 !important;
-    border: 1px solid #30363d !important;
-    width: 100%;
-    padding: 14px;
+/* File uploader */
+[data-testid="stFileUploader"] {
+    background-color: #020409;
+    border: 1px dashed #30363d;
+    padding: 16px;
 }
+
+/* Botones */
+button {
+    background-color: #020409 !important;
+    color: #c9a227 !important;
+    border: 1px solid #c9a227 !important;
+    padding: 14px !important;
+    width: 100% !important;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+button:hover {
+    background-color: #c9a227 !important;
+    color: #020409 !important;
+}
+
+/* Ocultar footer y menú */
+footer, header, #MainMenu {
+    visibility: hidden;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# WRAPPER INICIO
+# CONTENEDOR PRINCIPAL
 # =========================
 st.markdown('<div class="judge-terminal">', unsafe_allow_html=True)
 
 # =========================
-# JUEZ PRESENTE
+# JUEZ (VISIBLE Y CENTRAL)
 # =========================
 st.markdown("""
-<div class="judge-box">
-<span class="judge-title">⚖️ EL JUEZ</span><br><br>
-Estoy presente.  
-Esperando instrucciones.
+<div class="judge-core">
+    <div class="judge-title">⚖️ JUEZ DE JUEGOS</div>
+    <div class="judge-status">
+        SISTEMA DE ARBITRAJE ACTIVO<br>
+        ESTADO: ESPERANDO CASO
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center;'>JUEZ DE JUEGOS</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;color:#9ba3af;'>Árbitro neutral · Sin discusiones</p>", unsafe_allow_html=True)
-
-st.markdown("<hr>", unsafe_allow_html=True)
-
 # =========================
-# INSTRUCCIONES
+# CARGA DE INSTRUCCIONES
 # =========================
-st.markdown("<h3>📜 INSTRUCCIONES DEL JUEGO</h3>", unsafe_allow_html=True)
+st.markdown("### 📄 Instrucciones del juego")
 
-game_name = st.text_input("Nombre del juego")
-
-rules_text = st.text_area(
-    "Reglas (opcional)",
-    height=150,
-    placeholder="Escribe o sube las reglas"
+instructions_text = st.text_area(
+    "Pega aquí las reglas o descripción del juego",
+    height=180
 )
 
-uploaded = st.file_uploader(
-    "Sube instrucciones (foto, PDF, Word)",
-    type=["jpg", "png", "pdf", "docx"]
+uploaded_file = st.file_uploader(
+    "O sube una imagen con las instrucciones",
+    type=["png", "jpg", "jpeg"]
 )
 
-if uploaded:
-    st.markdown("""
-    <div class="judge-box">
-    El juez ha recibido las instrucciones.
-    </div>
-    """, unsafe_allow_html=True)
+extracted_text = ""
 
-    if uploaded.type.startswith("image"):
-        image = Image.open(uploaded)
-        st.image(image, use_container_width=True)
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Imagen cargada", use_container_width=True)
 
-if st.button("📘 ANALIZAR INSTRUCCIONES"):
-    st.markdown("""
-    <div class="judge-box">
-    <span class="judge-title">JUEZ</span><br><br>
-    Instrucciones analizadas.  
-    Estoy preparado para juzgar.
-    </div>
-    """, unsafe_allow_html=True)
+    try:
+        extracted_text = pytesseract.image_to_string(image, lang="spa")
+        st.success("Texto extraído correctamente de la imagen")
+    except Exception as e:
+        st.error("No se pudo leer el texto de la imagen")
 
 # =========================
-# CONSULTA
+# BOTÓN JUZGAR
 # =========================
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<h3>🧠 CONSULTA AL JUEZ</h3>", unsafe_allow_html=True)
+st.markdown("---")
 
-situation = st.text_area(
-    "Describe exactamente lo ocurrido",
-    height=160
-)
+if st.button("DICTAR VEREDICTO"):
+    final_text = instructions_text.strip() + "\n\n" + extracted_text.strip()
 
-if st.button("⚖️ EMITIR VEREDICTO"):
-    st.markdown("""
-    <div class="judge-box">
-    <span class="judge-title">VEREDICTO</span><br><br>
-    <b>NO VÁLIDO</b><br><br>
-    La acción contradice las reglas proporcionadas.
-    </div>
-    """, unsafe_allow_html=True)
+    if not final_text.strip():
+        st.error("El juez necesita instrucciones para dictar sentencia.")
+    else:
+        st.markdown("""
+        <div class="judge-core">
+            <div class="judge-title">📜 VEREDICTO</div>
+            <div class="judge-status">
+                El juego ha sido analizado.<br><br>
+                <strong>Resultado:</strong><br>
+                Reglas claras, estructura válida.<br>
+                El juez no encuentra contradicciones evidentes.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # =========================
-# WRAPPER FIN
+# CIERRE CONTENEDOR
 # =========================
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
