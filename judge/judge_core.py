@@ -1,48 +1,44 @@
-import streamlit as st
 from openai import OpenAI
+import os
 
-# --- CLIENTE OPENAI ---
-if "openai" not in st.secrets or "api_key" not in st.secrets["openai"]:
-    raise RuntimeError("❌ Falta la API Key de OpenAI en Secrets")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+SYSTEM_PROMPT = """
+Eres un juez de juegos de mesa con autoridad absoluta.
+No opinas, no negocias, no eres amable.
+Solo aplicas las reglas aprendidas y dictas veredictos claros.
 
+Formato obligatorio de respuesta:
 
-def explain_game(rules_text: str) -> str:
+⚖️ VEREDICTO
+Decisión: VÁLIDO / NO VÁLIDO
+Motivo: explicación breve citando las reglas
+"""
+
+def judge_event(game_name, rules, event_description):
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=[
             {
                 "role": "system",
-                "content": "Explica este juego de mesa de forma muy breve y clara."
+                "content": SYSTEM_PROMPT
             },
             {
                 "role": "user",
-                "content": rules_text
+                "content": f"""
+Juego: {game_name}
+
+Reglas del juego:
+{rules}
+
+Hecho ocurrido durante la partida:
+{event_description}
+
+Dicta veredicto.
+"""
             }
         ],
+        temperature=0.2
     )
 
-    return response.output_text.strip()
-
-
-def judge_move(rules_text: str, move_text: str) -> str:
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "system",
-                "content": "Eres un juez imparcial de juegos."
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"REGLAS:\n{rules_text}\n\n"
-                    f"JUGADA:\n{move_text}\n\n"
-                    "¿Es válida?"
-                )
-            }
-        ],
-    )
-
-    return response.output_text.strip()
+    return response.output_text
