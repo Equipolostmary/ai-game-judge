@@ -1,44 +1,28 @@
-from openai import OpenAI
 import os
+from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-SYSTEM_PROMPT = """
-Eres un juez de juegos de mesa con autoridad absoluta.
-No opinas, no negocias, no eres amable.
-Solo aplicas las reglas aprendidas y dictas veredictos claros.
+def judge_game(game_name, rules_text, player_action):
+    prompt = f"""
+Eres un juez supremo, serio y con autoridad absoluta.
+Conoces perfectamente el juego: {game_name}.
 
-Formato obligatorio de respuesta:
+REGLAS DEL JUEGO:
+{rules_text}
 
-⚖️ VEREDICTO
-Decisión: VÁLIDO / NO VÁLIDO
-Motivo: explicación breve citando las reglas
+ACCIÓN DEL JUGADOR:
+{player_action}
+
+Dicta un veredicto claro:
+- ¿Es válida o no?
+- Explica brevemente
+- Usa tono de juez, firme y serio
 """
 
-def judge_event(game_name, rules, event_description):
     response = client.responses.create(
         model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": f"""
-Juego: {game_name}
-
-Reglas del juego:
-{rules}
-
-Hecho ocurrido durante la partida:
-{event_description}
-
-Dicta veredicto.
-"""
-            }
-        ],
-        temperature=0.2
+        input=prompt
     )
 
     return response.output_text
